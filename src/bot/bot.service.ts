@@ -8,8 +8,11 @@ import { Context } from 'telegraf';
 interface SessionContext extends Context {
   session: {
     action: string | null;
+    currentPage: number;
   };
 }
+
+const LINKS_ON_PAGE = 5;
 
 @Update()
 @Injectable()
@@ -45,10 +48,15 @@ export class BotService {
 
     ctx.session.action = 'deleteLink';
   }
-
   @Hears('Список ссылок')
   async onGetListOfLinks(@Ctx() ctx: SessionContext) {
-    const links = await this.repositoryService.url.findMany();
+    ctx.session.currentPage = ctx.session.currentPage || 1;
+
+    const totalLinks = await this.repositoryService.url.count();
+    const links = await this.repositoryService.url.findMany({
+      skip: (ctx.session.currentPage - 1) * LINKS_ON_PAGE,
+      take: LINKS_ON_PAGE,
+    });
 
     if (links.length === 0) {
       await ctx.reply('Ссылки не найдены.');
@@ -59,7 +67,27 @@ export class BotService {
             `Короткая: ${link.shortHash} - Оригинальная: ${link.original}`,
         )
         .join('\n');
-      await ctx.reply(`Вот список ваших ссылок:\n${formattedLinks}`);
+      await ctx.reply(
+        `Вот ссылки на странице ${ctx.session.currentPage}:\n${formattedLinks}`,
+        { disable_web_page_preview: true } as any,
+      );
+
+      const buttons = [];
+      if (ctx.session.currentPage > 1) {
+        buttons.push([{ text: 'Предыдущая страница' }]);
+      }
+      if (totalLinks > ctx.session.currentPage * LINKS_ON_PAGE) {
+        buttons.push([{ text: 'Следующая страница' }]);
+      }
+      buttons.push([{ text: 'Назад в меню' }]); // Back to menu button
+
+      await ctx.reply('Навигация:', {
+        reply_markup: {
+          keyboard: buttons,
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        },
+      });
     }
   }
 
@@ -75,6 +103,24 @@ export class BotService {
   @On('text')
   async onText(@Ctx() ctx: SessionContext) {
     const userMessage = ctx.message['text'];
+
+    if (userMessage === 'Предыдущая страница') {
+      ctx.session.currentPage = Math.max(1, ctx.session.currentPage - 1);
+      await this.onGetListOfLinks(ctx);
+      return;
+    }
+
+    if (userMessage === 'Следующая страница') {
+      ctx.session.currentPage += 1;
+      await this.onGetListOfLinks(ctx);
+      return;
+    }
+
+    if (userMessage === 'Назад в меню') {
+      ctx.session.currentPage = 1;
+      await this.onStart(ctx);
+      return;
+    }
 
     switch (ctx.session.action) {
       case 'addLink':
