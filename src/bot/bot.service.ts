@@ -124,7 +124,7 @@ export class BotService {
 
     switch (ctx.session.action) {
       case 'addLink':
-        if (this.isValidUrl(userMessage)) {
+        if (this.validateURLWithRegexp(userMessage)) {
           const shortHash = this.generateHash(userMessage);
 
           const existingUrl = await this.repositoryService.url.findFirst({
@@ -195,6 +195,12 @@ export class BotService {
     } catch {
       return false;
     }
+  }
+
+  validateURLWithRegexp(url) {
+    const urlPattern =
+      /^(https?:\/\/)([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})?)(\/[^\s]*)?$/;
+    return urlPattern.test(url);
   }
 
   generateHash(url: string): string {
