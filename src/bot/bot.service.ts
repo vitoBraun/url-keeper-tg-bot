@@ -143,7 +143,7 @@ export class BotService {
               },
             });
 
-            await ctx.reply(`Хэш-код вашей ссылкы: ${shortHash}`);
+            await ctx.reply(`Хэш-код вашей ссылки: ${shortHash}`);
           }
         } else {
           await ctx.reply('Пожалуйста, введите правильный URL.');
