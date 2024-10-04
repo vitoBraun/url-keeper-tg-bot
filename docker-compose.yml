@@ -1,0 +1,11 @@
+services:
+  url-keper:
+    image: node:16
+    container_name: url-keeper
+    working_dir: /app
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./:/app/
+    command: npm run start:dev
