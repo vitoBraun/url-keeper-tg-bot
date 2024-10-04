@@ -146,7 +146,9 @@ export class BotService {
             await ctx.reply(`Хэш-код вашей ссылки: ${shortHash}`);
           }
         } else {
-          await ctx.reply('Пожалуйста, введите правильный URL.');
+          await ctx.reply(
+            'URL который вы ввели неправильный, выберите действие из меню',
+          );
         }
         break;
 
